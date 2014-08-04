@@ -53,7 +53,7 @@ std::shared_ptr<AbstractDualGraph> JSONAbstractDescription::toAbstractDualGraph(
   std::shared_ptr<AbstractDualGraph> graph = std::make_shared<AbstractDualGraph>(adg);
 
   for(unsigned long i=0; i < d_zones.size(); i++) {
-    for(unsigned long j=i; j < d_zones.size(); j++) {
+    for(unsigned long j=i+1; j < d_zones.size(); j++) {
       if(1 == hammingDist(d_zones[i], d_zones[j])) {
         add_edge(i, j, *graph);
       }
