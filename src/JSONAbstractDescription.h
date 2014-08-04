@@ -9,7 +9,6 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
-#include <boost/foreach.hpp> // FIXME: can we get rid of this in C++11?
 
 #include <libcola/cola.h>
 
