@@ -8,7 +8,7 @@ RootCluster * buildClusters(std::shared_ptr<AbstractDualGraph> graph,
                    int num_contours,
                    std::vector<RectangularCluster *> clusters) {
   // We're going to assume a 1-to-1 mapping between nodes and zone_index
-  auto zone_index = get(vertex_index, *graph);
+  auto zone_index = get(vertex_name, *graph);
 
   // Each graph may contain several clusters that should be considered
   // "top level" i.e. the graph contains multiple disconnected subgraphs.
@@ -102,6 +102,32 @@ unsigned long hammingDist(unsigned long x, unsigned long y) {
   return dist;
 }
 
+
+std::shared_ptr<ContainmentHierarchy> JSONAbstractDescription::toContainmentHierarchy(std::shared_ptr<AbstractDualGraph> adg, unsigned long num_contours) {
+  ContainmentHierarchy ch;
+  return std::make_shared<ContainmentHierarchy>(ch);
+  /*
+  ContainmentHierarchy ch;
+  // We know our vertex lables encode containment as a bitvector
+  auto zone_index = get(vertex_index, *graph);
+
+  // Get the labels in ascending order.
+  std::vector<long> 
+  // Build the Hasse diagram.
+
+  // Zone containment is build up level-by-level from level 0 to level
+  // num_contours.  Each level is a level in the Hasse diagram of all possible
+  // containments.  The level of the Hasse diagram corresponds with the number
+  // of bits set to `1' in the vertex index.
+  for(int level=0; level<num_contours; level++){
+  }
+
+  // for every possible zone
+  for(int i = 0; i < pow(2, num_contours); i++) {
+    
+  } */
+}
+
 std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toAbstractDualGraph(std::shared_ptr<ptree> propertyMap) {
   // Set a map from contour, as key, to index into bitvector.
   std::map<std::string, long> bv_index;
@@ -132,9 +158,14 @@ std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toA
   //  Our zones are the vertices.  If the hamming distance between two zones is
   //  1, then there is an edge between them.
   AbstractDualGraph dual(d_zones.size()); // FIXME: allocate on heap
+  unsigned long i = 0;
+  BGL_FORALL_VERTICES(vertex, dual, AbstractDualGraph) {
+    boost::put(vertex_name_t(), dual, vertex, d_zones[i]);
+    i++;
+  }
   std::shared_ptr<AbstractDualGraph> graph = std::make_shared<AbstractDualGraph>(dual);
 
-  for(unsigned long i=0; i < d_zones.size(); i++) {
+  for(i=0; i < d_zones.size(); i++) {
     for(unsigned long j=i+1; j < d_zones.size(); j++) {
       if(1 == hammingDist(d_zones[i], d_zones[j])) {
         add_edge(i, j, *graph);

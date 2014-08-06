@@ -7,3 +7,10 @@ eulergrams_CXXFLAGS=-std=c++11
 
 # uncool
 eulergrams_LDADD=-L/usr/local/lib -lcola -lvpsc -lboost_program_options
+
+# Rules for the test code (use `make check` to execute)
+TESTS = tests
+check_PROGRAMS = $(TESTS)
+tests_SOURCES  = Tests.cpp TestJSONImport.cpp
+tests_CXXFLAGS = $(CPPUNIT_CFLAGS)
+tests_LDFLAGS  = $(CPPUNIT_LIBS)

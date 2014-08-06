@@ -3,6 +3,7 @@ AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign])
 
+AM_PATH_CPPUNIT
 AC_PROG_CXX
 AC_PROG_CC
 

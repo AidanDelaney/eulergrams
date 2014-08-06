@@ -27,13 +27,13 @@ using namespace cola;
 typedef adjacency_list < vecS,
   vecS,
   undirectedS,
-  property<vertex_index_t, unsigned long>
+  property<vertex_name_t, unsigned long>
   > AbstractDualGraph;
 
 typedef adjacency_list < vecS,
   vecS,
-  undirectedS,
-  property<vertex_index_t, unsigned long>
+  directedS,
+  property<vertex_name_t, unsigned long>
   > ContainmentHierarchy;
 
 struct DrawableGraph {
@@ -49,6 +49,7 @@ class JSONAbstractDescription {
   std::shared_ptr<ptree> propertyMap;
 
   std::pair<std::shared_ptr<AbstractDualGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
+  std::shared_ptr<ContainmentHierarchy> toContainmentHierarchy(std::shared_ptr<AbstractDualGraph>, unsigned long);
 };
 
 #endif // JSONABSTRACTDESCRIPTION_H
