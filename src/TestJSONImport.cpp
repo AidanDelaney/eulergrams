@@ -107,8 +107,14 @@ void TestJSONImport::testComplexImport() {
   if(std::find(ids->begin(), ids->end(), 1) == ids->end()) {
     CPPUNIT_FAIL("Simple import does not get 1'st zone");
   }
+  if(std::find(ids->begin(), ids->end(), 2) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 2 zone");
+  }
   if(std::find(ids->begin(), ids->end(), 3) == ids->end()) {
     CPPUNIT_FAIL("Simple import does not get 3 zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 4) != ids->end()) {
+    CPPUNIT_FAIL("Simple import should not have 4 zone");
   }
   if(std::find(ids->begin(), ids->end(), 7) == ids->end()) {
     CPPUNIT_FAIL("Simple import does not get 7 zone");
