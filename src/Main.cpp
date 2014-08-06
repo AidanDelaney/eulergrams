@@ -65,7 +65,7 @@ int main(int argc, char ** argv) {
     UnsatisfiableConstraintInfos unsatisfiableX, unsatisfiableY;
     alg.setUnsatisfiableConstraintInfo(&unsatisfiableX, &unsatisfiableY);
 
-    alg.setClusterHierarchy(dg->root);
+    alg.setClusterHierarchy(&*(dg->root));
     alg.makeFeasible();
     alg.run();
     alg.outputInstanceToSVG(fname);

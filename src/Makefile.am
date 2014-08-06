@@ -12,6 +12,6 @@ eulergrams_LDADD=-L/usr/local/lib -lcola -lvpsc -lboost_program_options
 TESTS = tests
 check_PROGRAMS = $(TESTS)
 # FIXME: make libeulergrams so we don't have to list the source here.
-tests_SOURCES  = Tests.cpp TestJSONImport.cpp JSONAbstractDescription.cpp
+tests_SOURCES  = Tests.cpp TestJSONImport.cpp JSONAbstractDescription.cpp TestContainmentHierarchy.cpp
 tests_CXXFLAGS = $(CPPUNIT_CFLAGS) -std=c++11
 tests_LDFLAGS  = $(CPPUNIT_LIBS) -L/usr/local/lib -lcola -lvpsc

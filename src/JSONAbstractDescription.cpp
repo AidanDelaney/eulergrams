@@ -4,91 +4,27 @@ JSONAbstractDescription::JSONAbstractDescription(std::shared_ptr<stringstream> j
   read_json(*json, *propertyMap);
 }
 
-RootCluster * buildClusters(std::shared_ptr<AbstractDualGraph> graph,
-                   int num_contours,
-                   std::vector<RectangularCluster *> clusters) {
-  // We're going to assume a 1-to-1 mapping between nodes and zone_index
-  auto zone_index = get(vertex_name, *graph);
-
-  // Each graph may contain several clusters that should be considered
-  // "top level" i.e. the graph contains multiple disconnected subgraphs.
-  // The key here is to compare zone identifiers, which are a bitvector
-  // representation of the containment of the Euler diagram.  The zone ids
-  // are contained in graph vertices.
-  std::vector<long> top_levels;
-  BGL_FORALL_VERTICES(zone, *graph, AbstractDualGraph) {
-    const long z_id = zone_index[zone];
-
-    // The outside zone (bitvector 0) is a special case
-    // all clusters are children of bitvector 0
-    // it will become our RootCluster
-    if(0 == z_id) {
-      continue;
-    }
-
-    // if, in this subgraph, this node is the top-level node, "save" it
-    // it is a top-level node if childTest returns false on all of it's
-    // neighbours
-    bool zone_is_toplevel = true;
-    AbstractDualGraph::adjacency_iterator n_iter, n_end;
-    for(std::tie(n_iter, n_end) =boost::adjacent_vertices (zone, *graph); n_iter != n_end; ++n_iter) {
-      const long n_id = zone_index[*n_iter];
-      std::cout << z_id << " is a neighbour of " << zone_index[*n_iter] << std::endl;
-
-      // test if z_id is more top-level than n_id
-      if((z_id & n_id) != z_id) {
-        zone_is_toplevel = false;
-      }
-    }
-
-    if(zone_is_toplevel) {
-      top_levels.push_back(z_id);
-    }
-
-    // Find out which clusters this zone is in
-    //    for(int mask = 1; mask <= pow(2, num_contours); mask*=2) {
-    //  if((z_id & mask) > 0) {
-    //    clusters[log2(mask)]->addChildNode(z_id);
-    //  }
-    // }
-  }
-
-  if(top_levels.empty()) {
-    // There is only one connected graph rooted at z_id == 0
-    top_levels.push_back(0);
-  }
-
-  RootCluster * root = new RootCluster();
-  for(int i = 1; i< clusters.size(); i++) {
-
-    // find out if this cluster is a child of any of it's graph neighbours
-    //    auto parents = findParents()
-    //if
-
-    // else
-    root->addChildCluster(clusters[i]);
-  }
-}
-
 std::shared_ptr<DrawableGraph> JSONAbstractDescription::toDrawableGraph() {
   auto graph_count_pair = toAbstractDualGraph(propertyMap);
   auto graph = graph_count_pair.first;
   const auto num_contours = graph_count_pair.second;
   const int num_zones = num_vertices(*graph);
 
-  // There's a cluster for each contour, one for each key in the bitvector
-  std::vector<RectangularCluster *> clusters(num_contours);
+  auto bvs = std::make_shared<std::vector<unsigned long>>();
+  // FIXME: There should be a way of getting bvs without iterating through all
+  // the vertices.
+  auto name_index = get(vertex_name, *graph);
 
-  // init clusters
-  for(int i=0; i< num_contours; i++) {
-    clusters[i] = new RectangularCluster();
+  BGL_FORALL_VERTICES(vertex, *graph, AbstractDualGraph) {
+    unsigned long bitvector = name_index[vertex];
+    bvs->push_back(bitvector);
   }
-  RootCluster * root = buildClusters(graph, num_contours, clusters);
+  // end FIXME
 
-  DrawableGraph * dg = new DrawableGraph();
-  dg->root = root;
+  auto dg = std::make_shared<DrawableGraph>();
+  dg->root = toClusterHeirarchy(bvs, num_contours);
   dg->num_nodes = num_zones;
-  return std::make_shared<DrawableGraph>(*dg);
+  return dg;
 }
 
 unsigned long hammingDist(unsigned long x, unsigned long y) {
@@ -102,30 +38,44 @@ unsigned long hammingDist(unsigned long x, unsigned long y) {
   return dist;
 }
 
+// don't overoptimise and use HAKMEM
+int popCount(unsigned long n) {
+  unsigned long u = n;
 
-std::shared_ptr<ContainmentHierarchy> JSONAbstractDescription::toContainmentHierarchy(std::shared_ptr<AbstractDualGraph> adg, unsigned long num_contours) {
-  ContainmentHierarchy ch;
-  return std::make_shared<ContainmentHierarchy>(ch);
-  /*
-  ContainmentHierarchy ch;
-  // We know our vertex lables encode containment as a bitvector
-  auto zone_index = get(vertex_index, *graph);
+  do {
+    n = n>>1;
+    u -= n;
+  } while (n);
 
-  // Get the labels in ascending order.
-  std::vector<long> 
-  // Build the Hasse diagram.
+  return (int) u;
+}
 
-  // Zone containment is build up level-by-level from level 0 to level
-  // num_contours.  Each level is a level in the Hasse diagram of all possible
-  // containments.  The level of the Hasse diagram corresponds with the number
-  // of bits set to `1' in the vertex index.
-  for(int level=0; level<num_contours; level++){
+std::shared_ptr<RootCluster> JSONAbstractDescription::toClusterHeirarchy(std::shared_ptr<std::vector<unsigned long>> bvs, unsigned long num_contours) {
+  auto root = std::make_shared<RootCluster>();
+  // allocate these on heap as they get passed back in RootCluster.
+  std::vector<RectangularCluster *> clusters(num_contours);
+
+  // sort the vector by the number of bits in each long or, if they have the
+  // same number of bits, just use < on longs.
+  std::sort(bvs->begin(),
+            bvs->end(),
+            [] (unsigned long x, unsigned long y) {int xc=popCount(x), yc=popCount(y); bool r=false; (xc==yc)? r=x<y : r=xc<yc; return r;}
+            );
+  for(int i=1; i<=num_contours; ++i) {
+    unsigned long c_mask = pow(2, i);
+    for(auto j: *bvs) {
+      if(j == (c_mask ^ j)) {
+        // rectangle j is a child of cluster i
+        clusters[i]->addChildNode(j);
+      }
+    }
   }
 
-  // for every possible zone
-  for(int i = 0; i < pow(2, num_contours); i++) {
-    
-  } */
+  for(auto cluster: clusters) {
+    root->addChildCluster(cluster);
+  }
+
+  return root;
 }
 
 std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toAbstractDualGraph(std::shared_ptr<ptree> propertyMap) {
