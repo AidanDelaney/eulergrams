@@ -45,10 +45,11 @@ class JSONAbstractDescription {
  public:
   JSONAbstractDescription(std::shared_ptr<stringstream>);
   std::shared_ptr<DrawableGraph> toDrawableGraph();
+
+  std::pair<std::shared_ptr<AbstractDualGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
  private:
   std::shared_ptr<ptree> propertyMap;
 
-  std::pair<std::shared_ptr<AbstractDualGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
   std::shared_ptr<ContainmentHierarchy> toContainmentHierarchy(std::shared_ptr<AbstractDualGraph>, unsigned long);
 };
 
