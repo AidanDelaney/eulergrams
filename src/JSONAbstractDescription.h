@@ -28,7 +28,13 @@ typedef adjacency_list < vecS,
   vecS,
   undirectedS,
   property<vertex_index_t, unsigned long>
-  > AbstractGraph;
+  > AbstractDualGraph;
+
+typedef adjacency_list < vecS,
+  vecS,
+  undirectedS,
+  property<vertex_index_t, unsigned long>
+  > ContainmentHierarchy;
 
 struct DrawableGraph {
   RootCluster * root;
@@ -42,7 +48,7 @@ class JSONAbstractDescription {
  private:
   std::shared_ptr<ptree> propertyMap;
 
-  std::pair<std::shared_ptr<AbstractGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
+  std::pair<std::shared_ptr<AbstractDualGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
 };
 
 #endif // JSONABSTRACTDESCRIPTION_H

@@ -4,7 +4,7 @@ JSONAbstractDescription::JSONAbstractDescription(std::shared_ptr<stringstream> j
   read_json(*json, *propertyMap);
 }
 
-RootCluster * buildClusters(std::shared_ptr<AbstractGraph> graph,
+RootCluster * buildClusters(std::shared_ptr<AbstractDualGraph> graph,
                    int num_contours,
                    std::vector<RectangularCluster *> clusters) {
   // We're going to assume a 1-to-1 mapping between nodes and zone_index
@@ -16,7 +16,7 @@ RootCluster * buildClusters(std::shared_ptr<AbstractGraph> graph,
   // representation of the containment of the Euler diagram.  The zone ids
   // are contained in graph vertices.
   std::vector<long> top_levels;
-  BGL_FORALL_VERTICES(zone, *graph, AbstractGraph) {
+  BGL_FORALL_VERTICES(zone, *graph, AbstractDualGraph) {
     const long z_id = zone_index[zone];
 
     // The outside zone (bitvector 0) is a special case
@@ -30,7 +30,7 @@ RootCluster * buildClusters(std::shared_ptr<AbstractGraph> graph,
     // it is a top-level node if childTest returns false on all of it's
     // neighbours
     bool zone_is_toplevel = true;
-    AbstractGraph::adjacency_iterator n_iter, n_end;
+    AbstractDualGraph::adjacency_iterator n_iter, n_end;
     for(std::tie(n_iter, n_end) =boost::adjacent_vertices (zone, *graph); n_iter != n_end; ++n_iter) {
       const long n_id = zone_index[*n_iter];
       std::cout << z_id << " is a neighbour of " << zone_index[*n_iter] << std::endl;
@@ -102,7 +102,7 @@ unsigned long hammingDist(unsigned long x, unsigned long y) {
   return dist;
 }
 
-std::pair<std::shared_ptr<AbstractGraph>, long> JSONAbstractDescription::toAbstractDualGraph(std::shared_ptr<ptree> propertyMap) {
+std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toAbstractDualGraph(std::shared_ptr<ptree> propertyMap) {
   // Set a map from contour, as key, to index into bitvector.
   std::map<std::string, long> bv_index;
 
@@ -131,8 +131,8 @@ std::pair<std::shared_ptr<AbstractGraph>, long> JSONAbstractDescription::toAbstr
 
   //  Our zones are the vertices.  If the hamming distance between two zones is
   //  1, then there is an edge between them.
-  AbstractGraph dual(d_zones.size()); // FIXME: allocate on heap
-  std::shared_ptr<AbstractGraph> graph = std::make_shared<AbstractGraph>(dual);
+  AbstractDualGraph dual(d_zones.size()); // FIXME: allocate on heap
+  std::shared_ptr<AbstractDualGraph> graph = std::make_shared<AbstractDualGraph>(dual);
 
   for(unsigned long i=0; i < d_zones.size(); i++) {
     for(unsigned long j=i+1; j < d_zones.size(); j++) {
