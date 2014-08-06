@@ -66,9 +66,51 @@ void TestJSONImport::testSimpleImport() {
 }
 
 void TestJSONImport::testVenn2Import() {
-  //  CPPUNIT_FAIL( "not implemented" );
+  std::string file("../tests/data/a_b_ab.json");
+
+  auto pair = getIdVector(file);
+  auto ids = pair.first;
+  auto num_contours = pair.second;
+
+  unsigned long expected_cs = 2;
+  CPPUNIT_ASSERT_EQUAL(expected_cs, num_contours);
+  CPPUNIT_ASSERT_EQUAL(4, (int) ids->size());
+
+  if(std::find(ids->begin(), ids->end(), 0) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 0'th zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 1) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 1'st zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 2) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 2'nd zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 3) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 3'rd zone");
+  }
 }
 
 void TestJSONImport::testComplexImport() {
-  //  CPPUNIT_FAIL( "not implemented" );
+  std::string file("../tests/data/a_b_ab_abc.json");
+
+  auto pair = getIdVector(file);
+  auto ids = pair.first;
+  auto num_contours = pair.second;
+
+  unsigned long expected_cs = 3;
+  CPPUNIT_ASSERT_EQUAL(expected_cs, num_contours);
+  CPPUNIT_ASSERT_EQUAL(5, (int) ids->size());
+
+  if(std::find(ids->begin(), ids->end(), 0) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 0'th zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 1) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 1'st zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 3) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 3 zone");
+  }
+  if(std::find(ids->begin(), ids->end(), 7) == ids->end()) {
+    CPPUNIT_FAIL("Simple import does not get 7 zone");
+  }
 }
