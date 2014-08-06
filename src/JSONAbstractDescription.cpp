@@ -4,13 +4,19 @@ JSONAbstractDescription::JSONAbstractDescription(std::shared_ptr<stringstream> j
   read_json(*json, *propertyMap);
 }
 
-typedef boost::vec_adj_list_vertex_id_map<boost::property<boost::vertex_index_t, long unsigned int>, long unsigned int> IndexMap;
-void buildClusters(std::shared_ptr<AbstractDualGraph> graph,
+RootCluster * buildClusters(std::shared_ptr<AbstractGraph> graph,
                    int num_contours,
-                   std::vector<RectangularCluster *> clusters,
-                   std::vector<vpsc::Rectangle *> nodes,
-                   IndexMap zone_index) {
-  BGL_FORALL_VERTICES(zone, *graph, AbstractDualGraph) {
+                   std::vector<RectangularCluster *> clusters) {
+  // We're going to assume a 1-to-1 mapping between nodes and zone_index
+  auto zone_index = get(vertex_index, *graph);
+
+  // Each graph may contain several clusters that should be considered
+  // "top level" i.e. the graph contains multiple disconnected subgraphs.
+  // The key here is to compare zone identifiers, which are a bitvector
+  // representation of the containment of the Euler diagram.  The zone ids
+  // are contained in graph vertices.
+  std::vector<long> top_levels;
+  BGL_FORALL_VERTICES(zone, *graph, AbstractGraph) {
     const long z_id = zone_index[zone];
 
     // The outside zone (bitvector 0) is a special case
@@ -20,16 +26,51 @@ void buildClusters(std::shared_ptr<AbstractDualGraph> graph,
       continue;
     }
 
-    // Find out which clusters this zone is in
-    for(int mask = 1; mask <= pow(2, num_contours); mask*=2) {
-      if((z_id & mask) > 0) {
-        clusters[log2(mask)]->addChildNode(z_id);
+    // if, in this subgraph, this node is the top-level node, "save" it
+    // it is a top-level node if childTest returns false on all of it's
+    // neighbours
+    bool zone_is_toplevel = true;
+    AbstractGraph::adjacency_iterator n_iter, n_end;
+    for(std::tie(n_iter, n_end) =boost::adjacent_vertices (zone, *graph); n_iter != n_end; ++n_iter) {
+      const long n_id = zone_index[*n_iter];
+      std::cout << z_id << " is a neighbour of " << zone_index[*n_iter] << std::endl;
+
+      // test if z_id is more top-level than n_id
+      if((z_id & n_id) != z_id) {
+        zone_is_toplevel = false;
       }
     }
+
+    if(zone_is_toplevel) {
+      top_levels.push_back(z_id);
+    }
+
+    // Find out which clusters this zone is in
+    //    for(int mask = 1; mask <= pow(2, num_contours); mask*=2) {
+    //  if((z_id & mask) > 0) {
+    //    clusters[log2(mask)]->addChildNode(z_id);
+    //  }
+    // }
+  }
+
+  if(top_levels.empty()) {
+    // There is only one connected graph rooted at z_id == 0
+    top_levels.push_back(0);
+  }
+
+  RootCluster * root = new RootCluster();
+  for(int i = 1; i< clusters.size(); i++) {
+
+    // find out if this cluster is a child of any of it's graph neighbours
+    //    auto parents = findParents()
+    //if
+
+    // else
+    root->addChildCluster(clusters[i]);
   }
 }
 
-std::shared_ptr<RootCluster> JSONAbstractDescription::toAbstractGraph() {
+std::shared_ptr<DrawableGraph> JSONAbstractDescription::toDrawableGraph() {
   auto graph_count_pair = toAbstractDualGraph(propertyMap);
   auto graph = graph_count_pair.first;
   const auto num_contours = graph_count_pair.second;
@@ -37,55 +78,17 @@ std::shared_ptr<RootCluster> JSONAbstractDescription::toAbstractGraph() {
 
   // There's a cluster for each contour, one for each key in the bitvector
   std::vector<RectangularCluster *> clusters(num_contours);
-  // We need one node per zone i.e. vertex in our graph
-  std::vector<vpsc::Rectangle *> nodes(num_zones);
 
   // init clusters
   for(int i=0; i< num_contours; i++) {
     clusters[i] = new RectangularCluster();
   }
+  RootCluster * root = buildClusters(graph, num_contours, clusters);
 
-  // init nodes: Give nodes some initial position
-  const double width = 5;
-  const double height = 5;
-  double pos = 0;
-  for(int i=0; i< num_zones; i++) {
-    vpsc::Rectangle * rect = new vpsc::Rectangle(pos, pos +width, pos, pos +height);
-    nodes[i] = rect;
-
-    // XXX randomness is needed because COLA doesn't currently untangle
-    // the graph properly if all the nodes begin at the same position.
-    pos += (rand() % 10) - 5;
-  }
-
-  // We're going to assume a 1-to-1 mapping between nodes and zone_index
-  auto zone_index = get(vertex_index, *graph);
-  buildClusters(graph, num_contours, clusters, nodes, zone_index);
-  RootCluster * root = new RootCluster();
-  for(int i = 1; i< clusters.size(); i++) {
-    root->addChildCluster(clusters[i]);
-  }
-
-  /// FIXME: move this code
-    EdgeLengths eLengths;
-    std::vector<Edge> es;
-    ConstrainedFDLayout alg(nodes, es, 10, true, eLengths);
-    CompoundConstraints ccs;
-    alg.setConstraints(ccs);
-
-    UnsatisfiableConstraintInfos unsatisfiableX, unsatisfiableY;
-    alg.setUnsatisfiableConstraintInfo(&unsatisfiableX, &unsatisfiableY);
-
-    alg.setClusterHierarchy(root);
-    //alg.makeFeasible();
-    alg.run();
-    alg.outputInstanceToSVG("overlappingClusters02");
-  ///
-
-  nodes.clear();
-  clusters.clear();
-  // For each vertex in the graph, create a cluster
-  return std::make_shared<RootCluster>();
+  DrawableGraph * dg = new DrawableGraph();
+  dg->root = root;
+  dg->num_nodes = num_zones;
+  return std::make_shared<DrawableGraph>(*dg);
 }
 
 unsigned long hammingDist(unsigned long x, unsigned long y) {
@@ -99,7 +102,7 @@ unsigned long hammingDist(unsigned long x, unsigned long y) {
   return dist;
 }
 
-std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toAbstractDualGraph(std::shared_ptr<ptree> propertyMap) {
+std::pair<std::shared_ptr<AbstractGraph>, long> JSONAbstractDescription::toAbstractDualGraph(std::shared_ptr<ptree> propertyMap) {
   // Set a map from contour, as key, to index into bitvector.
   std::map<std::string, long> bv_index;
 
@@ -128,8 +131,8 @@ std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toA
 
   //  Our zones are the vertices.  If the hamming distance between two zones is
   //  1, then there is an edge between them.
-  AbstractDualGraph adg(d_zones.size()); // FIXME: allocate on heap
-  std::shared_ptr<AbstractDualGraph> graph = std::make_shared<AbstractDualGraph>(adg);
+  AbstractGraph dual(d_zones.size()); // FIXME: allocate on heap
+  std::shared_ptr<AbstractGraph> graph = std::make_shared<AbstractGraph>(dual);
 
   for(unsigned long i=0; i < d_zones.size(); i++) {
     for(unsigned long j=i+1; j < d_zones.size(); j++) {

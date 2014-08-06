@@ -39,6 +39,35 @@ int main(int argc, char ** argv) {
     file.close();
 
     JSONAbstractDescription jad(buffer);
-    std::cout << jad.toAbstractGraph() << std::endl;
+    auto dg = jad.toDrawableGraph();
+
+    // We need one node per zone i.e. vertex in our graph
+    std::vector<vpsc::Rectangle *> nodes(dg->num_nodes);
+    // init nodes: Give nodes some initial position
+    const double width = 5;
+    const double height = 5;
+    double pos = 0;
+    for(int i=0; i< dg->num_nodes; i++) {
+      vpsc::Rectangle * rect = new vpsc::Rectangle(pos, pos +width, pos, pos +height);
+      nodes[i] = rect;
+
+      // XXX randomness is needed because COLA doesn't currently untangle
+      // the graph properly if all the nodes begin at the same position.
+      pos += (rand() % 10) - 5;
+    }
+
+    EdgeLengths eLengths;
+    std::vector<Edge> es;
+    ConstrainedFDLayout alg(nodes, es, 10, true, eLengths);
+    CompoundConstraints ccs;
+    alg.setConstraints(ccs);
+
+    UnsatisfiableConstraintInfos unsatisfiableX, unsatisfiableY;
+    alg.setUnsatisfiableConstraintInfo(&unsatisfiableX, &unsatisfiableY);
+
+    alg.setClusterHierarchy(dg->root);
+    alg.makeFeasible();
+    alg.run();
+    alg.outputInstanceToSVG(fname);
   }
 }
