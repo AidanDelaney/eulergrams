@@ -1,0 +1,1 @@
+{"AbstractDiagram":{"Version":0,"Contours":["a","b","c","d","e"],"Zones":[{"in": []},{"in":["a","c"]},{"in":["c"]},{"in":["a"]},{"in":["b"]},{"in":["a","b"]},{"in":["a","c","e"]},{"in":["a","b","d"]}],"ShadedZones" : [],"Spiders" : []}}
