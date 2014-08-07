@@ -6,6 +6,7 @@
 #include <map>
 #include <utility>
 #include <cmath>
+#include <bitset>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -40,8 +41,8 @@ class JSONAbstractDescription {
   JSONAbstractDescription(std::shared_ptr<stringstream>);
   std::shared_ptr<DrawableGraph> toDrawableGraph();
 
-  std::pair<std::shared_ptr<AbstractDualGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
-  std::shared_ptr<RootCluster> toClusterHeirarchy(std::shared_ptr<std::vector<unsigned long>> bvs, unsigned long num_contours);
+  static std::pair<std::shared_ptr<AbstractDualGraph>, long> toAbstractDualGraph(std::shared_ptr<ptree>);
+  static std::shared_ptr<RootCluster> toClusterHeirarchy(std::shared_ptr<std::vector<unsigned long>> bvs, unsigned long num_contours);
  private:
   std::shared_ptr<ptree> propertyMap;
 };

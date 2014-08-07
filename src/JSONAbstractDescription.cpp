@@ -53,7 +53,10 @@ int popCount(unsigned long n) {
 std::shared_ptr<RootCluster> JSONAbstractDescription::toClusterHeirarchy(std::shared_ptr<std::vector<unsigned long>> bvs, unsigned long num_contours) {
   auto root = std::make_shared<RootCluster>();
   // allocate these on heap as they get passed back in RootCluster.
-  std::vector<RectangularCluster *> clusters(num_contours);
+  std::vector<RectangularCluster *> clusters;
+  for(int i=0; i< num_contours;++i) {
+    clusters.push_back(new RectangularCluster());
+  }
 
   // sort the vector by the number of bits in each long or, if they have the
   // same number of bits, just use < on longs.
@@ -61,11 +64,14 @@ std::shared_ptr<RootCluster> JSONAbstractDescription::toClusterHeirarchy(std::sh
             bvs->end(),
             [] (unsigned long x, unsigned long y) {int xc=popCount(x), yc=popCount(y); bool r=false; (xc==yc)? r=x<y : r=xc<yc; return r;}
             );
-  for(int i=1; i<=num_contours; ++i) {
+  for(int i=0; i<num_contours; ++i) {
     unsigned long c_mask = pow(2, i);
+    std::bitset<64> b(c_mask);
     for(auto j: *bvs) {
-      if(j == (c_mask ^ j)) {
+      std::cout << "Comparing " << j << " and " << b << std::endl;
+      if(j == (c_mask | j)) {
         // rectangle j is a child of cluster i
+        std::cout << "Adding " << j << " as a child of " << b << " pointer " << clusters[i] << std::endl;
         clusters[i]->addChildNode(j);
       }
     }
@@ -110,6 +116,7 @@ std::pair<std::shared_ptr<AbstractDualGraph>, long> JSONAbstractDescription::toA
   AbstractDualGraph dual(d_zones.size()); // FIXME: allocate on heap
   unsigned long i = 0;
   BGL_FORALL_VERTICES(vertex, dual, AbstractDualGraph) {
+    // FIXME: Use bitset instead of unisigned long
     boost::put(vertex_name_t(), dual, vertex, d_zones[i]);
     i++;
   }
