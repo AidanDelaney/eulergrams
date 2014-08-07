@@ -55,7 +55,9 @@ std::shared_ptr<RootCluster> JSONAbstractDescription::toClusterHeirarchy(std::sh
   // allocate these on heap as they get passed back in RootCluster.
   std::vector<RectangularCluster *> clusters;
   for(int i=0; i< num_contours;++i) {
-    clusters.push_back(new RectangularCluster());
+    auto rect = new RectangularCluster();
+    rect->setPadding(2); // FIXME: replace magic number
+    clusters.push_back(rect);
   }
 
   // sort the vector by the number of bits in each long or, if they have the
