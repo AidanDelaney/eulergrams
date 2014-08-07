@@ -68,10 +68,8 @@ std::shared_ptr<RootCluster> JSONAbstractDescription::toClusterHeirarchy(std::sh
     unsigned long c_mask = pow(2, i);
     std::bitset<64> b(c_mask);
     for(auto j: *bvs) {
-      std::cout << "Comparing " << j << " and " << b << std::endl;
       if(j == (c_mask | j)) {
         // rectangle j is a child of cluster i
-        std::cout << "Adding " << j << " as a child of " << b << " pointer " << clusters[i] << std::endl;
         clusters[i]->addChildNode(j);
       }
     }
