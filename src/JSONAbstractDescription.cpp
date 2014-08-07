@@ -69,9 +69,10 @@ std::shared_ptr<RootCluster> JSONAbstractDescription::toClusterHeirarchy(std::sh
   for(int i=0; i<num_contours; ++i) {
     unsigned long c_mask = pow(2, i);
     std::bitset<64> b(c_mask);
-    for(auto j: *bvs) {
-      if(j == (c_mask | j)) {
+    for(int j=0; j<bvs->size(); j++) {
+      if((*bvs)[j] == (c_mask | (*bvs)[j])) {
         // rectangle j is a child of cluster i
+        // the rectangle number is the index of j in bvs
         clusters[i]->addChildNode(j);
       }
     }
