@@ -18,11 +18,13 @@ void TestContainmentHierarchy::testSimpleCreation() {
 
   auto clusters = root->clusters;
   CPPUNIT_ASSERT_EQUAL(num_contours, (unsigned long) clusters.size());
-  // there should be 1 node in each cluster
   for(auto cluster: root->clusters) {
-    //    auto quack = cluster->nodes.size();
-    //    std::cout << "Cluster nodes: " << quack << std::endl;
-    //    CPPUNIT_ASSERT_EQUAL(1, (int) cluster->nodes.size());
+    // there should be 1 node in each cluster
+    CPPUNIT_ASSERT_EQUAL(1, (int) cluster->nodes.size());
+
+    // the node is an index into an array of size 2^num_contours
+    unsigned long index = cluster->nodes[0];
+    CPPUNIT_ASSERT(index < pow(2, num_contours));
   }
 }
 
